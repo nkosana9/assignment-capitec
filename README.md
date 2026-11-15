@@ -3,7 +3,7 @@
 [![ruff](https://img.shields.io/badge/ruff-Checked-brightgreen)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/badge/uv-enabled-informational)](https://github.com/astral-sh/uv)
 
-# Account Statement Service (FastAPI + RustFS + Postgres)
+# Account Statement Service
 
 This service stores customer account statements as PDF files and provides secure, time-limited download links to customers.
 
