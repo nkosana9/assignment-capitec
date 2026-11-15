@@ -1,0 +1,61 @@
+# Default values for account-statement-svc
+
+# REQUIRED unless existingSecret is set. Pass with --set-string.
+apiKey: ""
+
+image:
+  pullPolicy: IfNotPresent
+  repository: account-statement-svc
+  tag: "0.1.0"
+
+ingress:
+  annotations: {}
+  className: ""
+  enabled: false
+  host: downloads.localtest.me
+  tls: []
+
+link:
+  defaultTtlSeconds: 900
+  maxTtlSeconds: 86400
+
+# REQUIRED unless existingSecret is set. Pass with --set-string.
+linkSigningKey: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# Base URL embedded in the links handed to end users. Must be reachable by them.
+# Example with ingress: https://downloads.example.com
+publicBaseUrl: http://localhost:8000
+
+replicaCount: 1
+
+resources:
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+s3:
+  # Must match the root credentials of the rustfs chart.
+  accessKey: rustfsadmin
+  bucket: downloads
+  # In-cluster service of the local rustfs chart (<release>:9000 when released as "rustfs").
+  endpoint: rustfs:9000
+  region: af-south-1
+  secretKey: rustfsadmin
+  secure: false
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  readOnlyRootFilesystem: true
+
+service:
+  port: 8000
+  type: ClusterIP

@@ -1,0 +1,17 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} is deployed as "{{ .Chart.Name }}".
+
+Port-forward to try it locally:
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Chart.Name }} 8000:{{ .Values.service.port }}
+
+Then (API key = the value you passed as apiKey):
+
+  curl -s -H "X-API-Key: $API_KEY" -F "file=@./somefile.pdf" http://localhost:8000/api/v1/files
+  curl -s -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+       -d '{"expires_in_seconds": 300}' http://localhost:8000/api/v1/files/<file_id>/links
+
+{{- if not (or .Values.ingress.enabled (contains "localhost" .Values.publicBaseUrl)) }}
+
+WARNING: publicBaseUrl is "{{ .Values.publicBaseUrl }}". Links are built from it, so set it to the
+address your users can reach (for example via ingress.enabled=true and publicBaseUrl=https://<host>).
+{{- end }}

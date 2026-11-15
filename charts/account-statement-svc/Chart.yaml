@@ -1,0 +1,8 @@
+apiVersion: v2
+appVersion: "0.1.0"
+description: REST service that manages access to customer account statements
+maintainers:
+  - name: team-njabulo-mkhonto
+    email: team-njabulo.mkhonto@example.com
+name: account-statement-svc
+version: 0.1.0

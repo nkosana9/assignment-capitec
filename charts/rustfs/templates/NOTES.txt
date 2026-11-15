@@ -1,0 +1,11 @@
+RustFS is deployed as "{{ include "rustfs.fullname" . }}".
+
+S3 API (in-cluster):  http://{{ include "rustfs.fullname" . }}:{{ .Values.service.apiPort }}
+Console (port-forward):
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "rustfs.fullname" . }} 9001:{{ .Values.service.consolePort }}
+
+  then open http://localhost:9001
+
+The account-statement-svc chart expects the endpoint "{{ include "rustfs.fullname" . }}:{{ .Values.service.apiPort }}" by default.
+The bucket is created automatically by the API on startup.
