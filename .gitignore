@@ -1,0 +1,17 @@
+# Python and project-specific ignores
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.mypy_cache/
+.local/
+*.ruff_cache
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/

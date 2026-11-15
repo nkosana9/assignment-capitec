@@ -11,7 +11,7 @@ from service.libs.storage import ObjectStore
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["ops"])
+router = APIRouter(tags=["health"])
 
 
 @router.get("/livez")

@@ -1,0 +1,51 @@
+[project]
+dependencies = [
+    "boto3==1.44.2",
+    "fastapi==0.162.5",
+    "pydantic-settings==2.16.2",
+    "pyjwt==2.15.1",
+    "python-multipart==0.0.33",
+    "uvicorn==0.54.0",
+]
+description = "Account statement service: uploads customer statements and issues time-limited download links."
+dynamic = ["version"]
+name = "account-statement-svc"
+readme = "README.md"
+requires-python = ">=3.13"
+
+[build-system]
+# Only needed to read the dynamic version below. The project itself is never packaged (see [tool.uv]).
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# No Python package is built, so skip package discovery (service/ and charts/ are both top-level).
+packages = []
+
+[tool.setuptools.dynamic]
+version = { file = "version" }
+
+[dependency-groups]
+dev = [
+    "httpx==0.28.1",
+    "pre-commit>=4.7.0",
+    "pytest==9.2.0",
+    "ruff",
+]
+
+[tool.uv]
+# This is an application, not a library: dependencies are installed, the project itself is not built.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Tests import the `service` and `tests` packages from the project root.
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = [".venv", "charts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
