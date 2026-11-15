@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from service.api.deps import get_store
-from service.storage import ObjectStore
+from service.libs.storage import ObjectStore
 
 logger = logging.getLogger(__name__)
 

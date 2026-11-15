@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import Depends, Header, HTTPException, Request, status
 
 from service.configuration.configuration import Settings
-from service.storage import ObjectStore
+from service.libs.storage import ObjectStore
 
 
 def get_settings_dep(request: Request) -> Settings:

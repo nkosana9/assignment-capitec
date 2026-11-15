@@ -9,10 +9,17 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Path, UploadFile, s
 from fastapi.responses import StreamingResponse
 
 from service.api.deps import get_settings_dep, get_store, require_api_key
-from service.api.schemas import CUSTOMER_ID_PATTERN, STATEMENT_ID_PATTERN, LinkCreated, LinkRequest, StatementCreated
+from service.api.schemas.requests import LinkRequest
+from service.api.schemas.responses import (
+    CUSTOMER_ID_PATTERN,
+    STATEMENT_ID_PATTERN,
+    LinkCreated,
+    StatementCreated,
+)
 from service.configuration.configuration import Settings
-from service.libs.security import LinkExpired, LinkInvalid, issue_download_token, verify_download_token
-from service.storage import ObjectNotFound, ObjectStore, sanitize_filename
+from service.errors import LinkExpired, LinkInvalid, ObjectNotFound
+from service.libs.security import issue_download_token, verify_download_token
+from service.libs.storage import ObjectStore, sanitize_filename
 
 router = APIRouter(prefix="/api/v1/statements", tags=["statements"])
 
