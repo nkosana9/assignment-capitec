@@ -42,15 +42,11 @@ class FakeStore:
 
     def stat(self, key: str) -> ObjectInfo:
         blob = self._get(key)
-        return ObjectInfo(
-            size=len(blob.data), content_type=blob.content_type, filename=blob.filename, owner=blob.owner
-        )
+        return ObjectInfo(size=len(blob.data), content_type=blob.content_type, filename=blob.filename, owner=blob.owner)
 
     def open(self, key: str) -> ObjectStream:
         blob = self._get(key)
-        info = ObjectInfo(
-            size=len(blob.data), content_type=blob.content_type, filename=blob.filename, owner=blob.owner
-        )
+        info = ObjectInfo(size=len(blob.data), content_type=blob.content_type, filename=blob.filename, owner=blob.owner)
         return ObjectStream(info=info, chunks=iter([blob.data]))
 
     def _get(self, key: str) -> StoredBlob:

@@ -29,7 +29,7 @@ def create_app(settings: Settings | None = None, store: ObjectStore | None = Non
     store = store or S3Store.from_settings(settings)
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         """Ensure the storage bucket exists before the app starts serving requests."""
         await run_in_threadpool(store.ensure_bucket)
         yield

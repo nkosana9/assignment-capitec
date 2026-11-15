@@ -1,4 +1,4 @@
-"""Business logic dictating how statements are stored, how link lifetimes are chosen and capped and 
+"""Business logic dictating how statements are stored, how link lifetimes are chosen and capped and
 who may see a statement.
 """
 

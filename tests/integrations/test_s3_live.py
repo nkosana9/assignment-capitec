@@ -12,6 +12,7 @@ import uuid
 import boto3
 import pytest
 from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi.testclient import TestClient
 
 from service.configuration.configuration import Settings
@@ -126,7 +127,8 @@ def test_ping_fails_fast_when_storage_is_unreachable(s3_settings):
     store = S3Store.from_settings(unreachable)
 
     start = time.monotonic()
-    with pytest.raises(Exception):
+    # Connection failures surface as botocore errors (BotoCoreError); server errors as ClientError.
+    with pytest.raises((BotoCoreError, ClientError)):
         store.ping()
     # The probe client has a 2s connect timeout and a single attempt, so it must fail well under 10s.
     assert time.monotonic() - start < 10
