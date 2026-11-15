@@ -39,7 +39,7 @@ KCTL := kubectl --context $(KUBE_CONTEXT)
 HELM := helm --kube-context $(KUBE_CONTEXT) --namespace $(NAMESPACE)
 
 .PHONY: help up down clean status logs forward docker-build secrets check-context namespace \
-        registry-up registry-down deploy-rustfs deploy-app lint test
+	registry-up registry-down deploy-rustfs deploy-app lint setup test
 
 # ---- entry points -------------------------------------------------------------
 help: ## Show this help
@@ -113,7 +113,10 @@ lint: ## Lint the Helm charts
 	helm lint charts/rustfs
 	helm lint $(APP_CHART) --set-string apiKey=lint-only-lint-only --set-string linkSigningKey=lint-only-lint-only-lint-only-lint-only
 
-test: ## Run unit tests (S3_INTEGRATION=1 also runs the live RustFS tests; set S3_ENDPOINT etc. as needed)
+setup: ## Create/update the uv virtualenv and install project and development dependencies
+	uv sync --group dev
+
+test: setup ## Set up the environment, then run unit tests (S3_INTEGRATION=1 also runs live RustFS tests)
 	uv run pytest -q
 
 # ---- building blocks (run by `up`) -------------------------------------------

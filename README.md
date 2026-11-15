@@ -45,6 +45,25 @@ GET  /api/v1/statements/downloads/{token}.     → Downloads the file if the tok
 
 Copy `.env.example` to `.env` for local runs.
 
+## Testing
+
+To run the tests, set up the project virtual environment and install dependencies.
+Then run the unit and API tests from the project root (requires Python 3.13+ and `uv`):
+
+
+The `test` Make target will run through all these steps automatically:
+```bash
+make test
+```
+
+Live S3/RustFS integration tests are skipped by default. To include them, start an S3-compatible server and run:
+
+```bash
+S3_INTEGRATION=1 make test
+```
+
+The integration tests use `localhost:9000` and the `rustfsadmin` credentials by default. Override these with `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, and `S3_SECURE` when needed. They create and remove a temporary test bucket, so the configured credentials need permission to manage buckets and objects.
+
 ## API
 
 Interactive docs may be found at `/docs` when the service is running.
