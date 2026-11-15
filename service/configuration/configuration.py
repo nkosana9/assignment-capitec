@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     link_max_ttl_seconds: int = Field(default=86400, ge=60)
     link_signing_key: SecretStr = Field(min_length=32)
 
+    # Largest statement accepted on upload, in bytes (10 MiB by default).
+    max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+
     # Externally reachable base URL; used to build the links handed to users.
     public_base_url: str = "http://localhost:8000"
 
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
     s3_access_key: str = "rustfsadmin"
     s3_bucket: str = "downloads"
     s3_endpoint: str = "localhost:9000"
-    s3_region: str = "us-east-1"
+    s3_region: str = "af-south-1"
     s3_secret_key: SecretStr = SecretStr("rustfsadmin")
     s3_secure: bool = False
 

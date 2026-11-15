@@ -7,21 +7,38 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from service.controllers import statement_controller as controller
-from service.errors import LinkExpired, LinkInvalid, ObjectNotFound, StatementNotFound, TtlExceedsMaximum
+from service.errors import (
+    LinkExpired,
+    LinkInvalid,
+    ObjectNotFound,
+    StatementNotFound,
+    StatementTooLarge,
+    TtlExceedsMaximum,
+)
 from service.libs.security import issue_download_token, verify_download_token
 from tests.conftest import CUSTOMER, SIGNING_KEY, FakeStore
 
 PATH_PREFIX = "/api/v1/statements"
 DOWNLOAD_PREFIX = f"{PATH_PREFIX}/downloads/"
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # the default MAX_UPLOAD_BYTES
 
 
-def _upload(store: FakeStore, *, data=b"%PDF", name="report.pdf", content_type="application/pdf", customer=CUSTOMER):
+def _upload(
+    store: FakeStore,
+    *,
+    data=b"%PDF",
+    name="report.pdf",
+    content_type="application/pdf",
+    customer=CUSTOMER,
+    max_bytes=MAX_UPLOAD_BYTES,
+):
     return controller.upload_statement(
         store,
         customer_id=customer,
         raw_filename=name,
         raw_content_type=content_type,
         data=io.BytesIO(data),
+        max_bytes=max_bytes,
     )
 
 
@@ -56,6 +73,25 @@ def test_upload_generates_a_32_char_hex_id(store):
 
 def test_upload_generates_distinct_ids(store):
     assert _upload(store).statement_id != _upload(store).statement_id
+
+
+def test_upload_accepts_a_statement_exactly_at_the_limit(store):
+    stored = _upload(store, data=b"x" * 10, max_bytes=10)
+
+    assert store.objects[stored.statement_id].data == b"x" * 10
+
+
+def test_upload_rejects_a_statement_over_the_limit_and_stores_nothing(store):
+    with pytest.raises(StatementTooLarge) as excinfo:
+        _upload(store, data=b"x" * 11, max_bytes=10)
+
+    assert excinfo.value.max_bytes == 10
+    assert store.objects == {}
+
+
+def test_upload_default_limit_is_ten_mebibytes(store):
+    with pytest.raises(StatementTooLarge):
+        _upload(store, data=b"x" * (MAX_UPLOAD_BYTES + 1))
 
 
 def test_upload_writes_bytes_with_owner_and_metadata(store):

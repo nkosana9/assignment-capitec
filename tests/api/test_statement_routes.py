@@ -13,7 +13,14 @@ import pytest
 from service.controllers import statement_controller
 from service.dtos.statement_dtos import Download, IssuedLink, StoredStatement
 from service.dtos.storage_dtos import ObjectInfo, ObjectStream
-from service.errors import LinkExpired, LinkInvalid, ObjectNotFound, StatementNotFound, TtlExceedsMaximum
+from service.errors import (
+    LinkExpired,
+    LinkInvalid,
+    ObjectNotFound,
+    StatementNotFound,
+    StatementTooLarge,
+    TtlExceedsMaximum,
+)
 from tests.conftest import CUSTOMER
 
 STATEMENT_ID = "a" * 32
@@ -36,9 +43,12 @@ class FakeController:
         self.link_error: Exception | None = None
         self.download_result: Download | None = None
         self.download_error: Exception | None = None
+        self.upload_error: Exception | None = None
 
     def upload_statement(self, store, **kwargs):
         self.calls.append(("upload", kwargs))
+        if self.upload_error is not None:
+            raise self.upload_error
         return self.upload_result
 
     def create_download_link(self, store, settings, **kwargs):
@@ -107,6 +117,22 @@ def test_upload_passes_form_fields_to_controller(client, auth, controller):
     assert kwargs["customer_id"] == CUSTOMER
     assert kwargs["raw_filename"] == "report.pdf"
     assert kwargs["raw_content_type"] == "application/pdf"
+
+
+def test_upload_passes_configured_size_limit_to_controller(client, auth, controller, settings):
+    _upload(client, auth)
+
+    _, kwargs = controller.calls[0]
+    assert kwargs["max_bytes"] == settings.max_upload_bytes
+
+
+def test_upload_over_the_limit_returns_413(client, auth, controller):
+    controller.upload_error = StatementTooLarge(10)
+
+    resp = _upload(client, auth)
+
+    assert resp.status_code == 413
+    assert resp.json()["detail"] == "Statement exceeds the maximum upload size of 10 bytes."
 
 
 def test_upload_requires_api_key(client, controller):

@@ -22,6 +22,19 @@ class TtlExceedsMaximum(Exception):
         self.max_seconds = max_seconds
 
 
+class StatementTooLarge(Exception):
+    """The uploaded statement is larger than the configured maximum."""
+
+    def __init__(self, max_bytes: int) -> None:
+        """Record the maximum allowed upload size in the error.
+
+        Args:
+            max_bytes: The configured maximum upload size, in bytes.
+        """
+        super().__init__(f"Statement must be at most {max_bytes} bytes")
+        self.max_bytes = max_bytes
+
+
 class LinkError(Exception):
     """Base class for download-related failures."""
 

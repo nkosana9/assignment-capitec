@@ -2,6 +2,7 @@
 who may see a statement.
 """
 
+import io
 import uuid
 from datetime import datetime
 from typing import BinaryIO
@@ -9,11 +10,20 @@ from zoneinfo import ZoneInfo
 
 from service.configuration.configuration import Settings
 from service.dtos.statement_dtos import Download, IssuedLink, StoredStatement
-from service.errors import ObjectNotFound, StatementNotFound, TtlExceedsMaximum
+from service.errors import ObjectNotFound, StatementNotFound, StatementTooLarge, TtlExceedsMaximum
 from service.libs.security import issue_download_token, verify_download_token
 from service.libs.storage import ObjectStore, sanitize_filename
 
 _DEFAULT_MIME_TYPE = "application/octet-stream"
+
+
+def _size_of(data: BinaryIO) -> int:
+    """Return the number of bytes in a seekable stream, leaving its position unchanged."""
+    position = data.tell()
+    data.seek(0, io.SEEK_END)
+    size = data.tell()
+    data.seek(position)
+    return size
 
 
 def upload_statement(
@@ -23,6 +33,7 @@ def upload_statement(
     raw_filename: str | None,
     raw_content_type: str | None,
     data: BinaryIO,
+    max_bytes: int,
 ) -> StoredStatement:
     """Store a new statement under a freshly generated ID.
 
@@ -32,10 +43,17 @@ def upload_statement(
         raw_filename: The client-supplied filename, sanitised before storage.
         raw_content_type: The client-supplied MIME type, defaulting to a generic binary type.
         data: The statement's contents.
+        max_bytes: The largest statement that may be stored, in bytes.
 
     Returns:
         The new statement's ID and stored metadata.
+
+    Raises:
+        StatementTooLarge: If the statement is larger than `max_bytes`. Nothing is stored.
     """
+    if _size_of(data) > max_bytes:
+        raise StatementTooLarge(max_bytes)
+
     statement_id = uuid.uuid4().hex
     filename = sanitize_filename(raw_filename)
     content_type = raw_content_type or _DEFAULT_MIME_TYPE

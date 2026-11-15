@@ -20,6 +20,7 @@ from service.errors import (
     LinkInvalid,
     ObjectNotFound,
     StatementNotFound,
+    StatementTooLarge,
     TtlExceedsMaximum,
 )
 from service.libs.storage import ObjectStore
@@ -36,6 +37,7 @@ router = APIRouter(prefix="/api/v1/statements", tags=["statements"])
 def upload_file(
     statement: UploadFile,
     customer_id: Annotated[str, Form(pattern=CUSTOMER_ID_PATTERN)],
+    settings: Annotated[Settings, Depends(get_application_settings)],
     store: Annotated[ObjectStore, Depends(get_file_store)],
 ) -> StatementCreatedResponse:
     """Store an uploaded statement for a customer.
@@ -43,18 +45,29 @@ def upload_file(
     Args:
         statement: The uploaded file, as sent in the multipart `statement` field.
         customer_id: The customer the statement belongs to.
+        settings: The application settings, for the upload size limit.
         store: The object store to write to.
 
     Returns:
         The ID and metadata of the stored statement.
+
+    Raises:
+        HTTPException: 413 if the statement is larger than the configured upload limit.
     """
-    stored = statement_controller.upload_statement(
-        store,
-        customer_id=customer_id,
-        raw_filename=statement.filename,
-        raw_content_type=statement.content_type,
-        data=statement.file,
-    )
+    try:
+        stored = statement_controller.upload_statement(
+            store,
+            customer_id=customer_id,
+            raw_filename=statement.filename,
+            raw_content_type=statement.content_type,
+            data=statement.file,
+            max_bytes=settings.max_upload_bytes,
+        )
+    except StatementTooLarge as exc:
+        raise HTTPException(
+            status.HTTP_413_CONTENT_TOO_LARGE,
+            f"Statement exceeds the maximum upload size of {exc.max_bytes} bytes.",
+        ) from exc
     return StatementCreatedResponse(
         statement_id=stored.statement_id,
         filename=stored.filename,
