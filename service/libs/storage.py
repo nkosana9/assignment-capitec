@@ -1,39 +1,11 @@
 """Defines storage-agnostic object types and the `ObjectStore` interface."""
 
 import re
-from collections.abc import Iterator
-from dataclasses import dataclass
 from typing import BinaryIO, Protocol
 
+from service.dtos.storage_dtos import ObjectInfo, ObjectStream
+
 _UNSAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
-
-
-@dataclass(frozen=True)
-class ObjectInfo:
-    """Information about a stored object."""
-
-    content_type: str
-    """The MIME type of the object."""
-
-    filename: str
-    """The original filename of the object."""
-
-    owner: str
-    """The customer the object belongs to"""
-
-    size: int
-    """The size of the object in bytes."""
-
-
-@dataclass
-class ObjectStream:
-    """A stream of an object's data along with its metadata."""
-
-    chunks: Iterator[bytes]
-    """An iterator yielding the object's data in chunks."""
-
-    info: ObjectInfo
-    """Metadata about the object."""
 
 
 class ObjectStore(Protocol):

@@ -1,3 +1,5 @@
+"""Application configuration, loaded from environment variables and an optional .env file."""
+
 from functools import lru_cache
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -58,4 +60,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return the process-wide `Settings`, loading it once on first use."""
     return Settings()  # type: ignore[call-arg]  # values come from the environment

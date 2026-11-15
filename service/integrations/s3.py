@@ -1,4 +1,4 @@
-"""S3 implementation of the object store (RustFS or any S3-compatible server)."""
+"""S3 implementation of the object store (currently RustFS but may be any S3-compatible server)."""
 
 from collections.abc import Iterator, Mapping
 from typing import BinaryIO
@@ -9,15 +9,15 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from service.configuration.configuration import Settings
+from service.dtos.storage_dtos import ObjectInfo, ObjectStream
 from service.errors import ObjectNotFound
-from service.libs.storage import ObjectInfo, ObjectStream
 
 _CHUNK_SIZE = 64 * 1024
+_FILENAME_META = "filename"
+_NOT_FOUND_CODES = {"404", "NoSuchKey", "NotFound"}
+_OWNER_META = "owner"
 # Multipart part size for uploads. S3 requires at least 5 MiB for every part except the last.
 _UPLOAD_PART_SIZE = 8 * 1024 * 1024
-_NOT_FOUND_CODES = {"404", "NoSuchKey", "NotFound"}
-_FILENAME_META = "filename"
-_OWNER_META = "owner"
 
 
 def _info(size: int, content_type: str | None, metadata: Mapping[str, str] | None) -> ObjectInfo:
@@ -91,6 +91,14 @@ class S3Store:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "S3Store":
+        """Build a store from application settings, with a fast-failing probe client.
+
+        Args:
+            settings: The application settings holding the S3 endpoint and credentials.
+
+        Returns:
+            An `S3Store` ready to use.
+        """
         # Path-style addressing: RustFS and in-cluster service names do not support virtual hosts.
         addressing = {"addressing_style": "path"}
         client = _s3_client(
@@ -110,6 +118,11 @@ class S3Store:
         return cls(client, settings.s3_bucket, probe_client=probe_client)
 
     def ensure_bucket(self) -> None:
+        """Create the configured bucket if it does not already exist.
+
+        Raises:
+            ClientError: If the bucket check fails for a reason other than not-found.
+        """
         try:
             self._client.head_bucket(Bucket=self._bucket)
         except ClientError as exc:
@@ -118,9 +131,23 @@ class S3Store:
             self._client.create_bucket(Bucket=self._bucket)
 
     def ping(self) -> None:
+        """Check that the bucket is reachable, using the short-timeout probe client.
+
+        Raises:
+            ClientError: If the bucket cannot be accessed.
+        """
         self._probe_client.head_bucket(Bucket=self._bucket)
 
     def put(self, key: str, data: BinaryIO, content_type: str, filename: str, owner: str) -> None:
+        """Upload an object, using multipart transfer for large payloads.
+
+        Args:
+            key: The object key to write.
+            data: The contents to upload.
+            content_type: The MIME type to record on the object.
+            filename: The original filename, stored as object metadata.
+            owner: The customer the object belongs to, stored as object metadata.
+        """
         self._client.upload_fileobj(
             data,
             self._bucket,
@@ -136,6 +163,17 @@ class S3Store:
         )
 
     def stat(self, key: str) -> ObjectInfo:
+        """Fetch an object's metadata without downloading its contents.
+
+        Args:
+            key: The object key to look up.
+
+        Returns:
+            The object's size, content type, filename and owner.
+
+        Raises:
+            ObjectNotFound: If no object exists under `key`.
+        """
         try:
             resp = self._client.head_object(Bucket=self._bucket, Key=key)
         except ClientError as exc:
@@ -145,6 +183,17 @@ class S3Store:
         return _info(resp["ContentLength"], resp.get("ContentType"), resp.get("Metadata"))
 
     def open(self, key: str) -> ObjectStream:
+        """Open an object for streaming, returning its metadata and a chunk iterator.
+
+        Args:
+            key: The object key to open.
+
+        Returns:
+            The object's metadata together with an iterator over its contents.
+
+        Raises:
+            ObjectNotFound: If no object exists under `key`.
+        """
         try:
             resp = self._client.get_object(Bucket=self._bucket, Key=key)
         except ClientError as exc:
@@ -155,6 +204,7 @@ class S3Store:
         body = resp["Body"]
 
         def chunks() -> Iterator[bytes]:
+            """Yield the object's contents in fixed-size chunks, closing the body when done."""
             try:
                 yield from body.iter_chunks(_CHUNK_SIZE)
             finally:

@@ -1,4 +1,4 @@
-"""Application health endpoints for the orchestrator"""
+"""Application health endpoints"""
 
 import logging
 from typing import Annotated
@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from service.api.deps import get_store
+from service.api.dependencies import get_file_store
 from service.libs.storage import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def livez() -> dict[str, str]:
 
 
 @router.get("/readyz")
-def readyz(store: Annotated[ObjectStore, Depends(get_store)]) -> JSONResponse:
+def readyz(store: Annotated[ObjectStore, Depends(get_file_store)]) -> JSONResponse:
     """Responds with readiness status if the service can do real work."""
     try:
         store.ping()

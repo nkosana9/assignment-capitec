@@ -10,7 +10,7 @@ CUSTOMER_ID_PATTERN = r"^[A-Za-z0-9._:-]{1,128}$"
 STATEMENT_ID_PATTERN = r"^[0-9a-f]{32}$"
 
 
-class StatementCreated(BaseModel):
+class StatementCreatedResponse(BaseModel):
     """Response model for a created statement."""
 
     content_type: str
@@ -26,7 +26,7 @@ class StatementCreated(BaseModel):
     """The ID of the created statement."""
 
 
-class LinkCreated(BaseModel):
+class LinkCreatedResponse(BaseModel):
     """Response model for a created download link."""
 
     expires_at: datetime
